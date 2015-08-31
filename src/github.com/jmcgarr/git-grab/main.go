@@ -22,7 +22,7 @@ func main() {
 	}
 
 	repoPath := ParseRepo(args[0])
-	var cloneDir string = fmt.Sprintf("%s/Projects-test/%s", home, repoPath)
+	var cloneDir string = fmt.Sprintf("%s/Projects/%s", home, repoPath)
 	cmd := exec.Command("git", "clone", args[0], cloneDir)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
