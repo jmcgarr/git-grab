@@ -1,2 +1,5 @@
 .gradle/
 bin/
+pkg/
+dist/
+src/github.com/op
