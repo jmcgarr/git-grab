@@ -14,16 +14,13 @@ PLATFORMS= \
 	$(NULL)
 
 DIST=$(shell pwd)/dist
-export GOPATH=$(shell pwd)
 
 build:
-	cd src/github.com/jmcgarr/git-grab; \
 	go get -v
 
 all:
 	rm -rf $(DIST); \
 	mkdir -p $(DIST); \
-	cd src/github.com/jmcgarr/git-grab; \
 	go get -d; \
 	for p in $(PLATFORMS); do \
         echo "Building for $$p"; \
