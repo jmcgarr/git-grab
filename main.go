@@ -42,14 +42,14 @@ func ParseRepo(repo string) string {
 	var noProtocol = strings.Split(repo, "://")
 	var withoutGit = strings.Split(noProtocol[len(noProtocol)-1], "@")
 	var basicRepo string = withoutGit[len(withoutGit)-1]
-	basicRepo = strings.Replace(basicRepo, ".git", "", 1)
+	basicRepo = strings.TrimSuffix(basicRepo, ".git")
 	var ownerRepoSplit = strings.Split(basicRepo, "/")
 
 	server = strings.Split(basicRepo, ".")[0]
 	owner = ownerRepoSplit[len(ownerRepoSplit)-2]
 	var colonSplit = strings.Split(owner, ":")
 	owner = colonSplit[len(colonSplit)-1]
-	owner = strings.Replace(owner, "~", "users/", 1)
+	owner = strings.Replace(owner, "~", "users/", 1) // for Stash, adding a subpath for user owned repos
 	owner = strings.ToLower(owner)
 	repoName = ownerRepoSplit[len(ownerRepoSplit)-1]
 

@@ -3,3 +3,5 @@ bin/
 pkg/
 dist/
 src/github.com/op
+.idea/
+*.iml
