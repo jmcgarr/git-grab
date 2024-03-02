@@ -27,6 +27,6 @@ all:
 	for p in $(PLATFORMS); do \
         	echo "Building for $$p"; \
 		BLDCMD=GOOS=$${p/-*/} GOARCH=$${p/*-/} go build -v -ldflags -s -o $(DIST)/git-grab-$$p; \
-		echo $BLDCMD
+		echo $(BLDCMD)
 		GOOS=$${p/-*/} GOARCH=$${p/*-/} go build -v -ldflags -s -o $(DIST)/git-grab-$$p; \
    	done
