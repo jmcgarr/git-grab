@@ -26,6 +26,7 @@ all:
 	go get -d; \
 	GOOS=darwin-amd64 GOARCH=darwin-amd64 go build -v -ldflags -s -o $(DIST)/git-grab-darwin-amd64; \
 	for p in $(PLATFORMS); do \
-        echo "Building for $$p"; \
+        	echo "Building for $$p"; \
+        	echo "Building for $${p/-*/}"; \
 		GOOS=$${p/-*/} GOARCH=$${p/*-/} go build -v -ldflags -s -o $(DIST)/git-grab-$$p; \
    	done
