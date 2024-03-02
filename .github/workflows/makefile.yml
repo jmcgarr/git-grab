@@ -1,4 +1,4 @@
-name: Makefile CI
+name: Run Make to build distributions
 
 on:
   push:
