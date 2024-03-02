@@ -1,4 +1,6 @@
 PLATFORMS= \
+	darwin-386 \
+	darwin-amd64 \
 	freebsd-386 \
 	freebsd-amd64 \
 	freebsd-arm \
@@ -9,8 +11,6 @@ PLATFORMS= \
 	openbsd-amd64 \
 	windows-386 \
 	windows-amd64 \
-	darwin-386 \
-	darwin-amd64 \
 	$(NULL)
 
 DIST=$(shell pwd)/dist
