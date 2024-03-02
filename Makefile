@@ -25,8 +25,6 @@ all:
 	mkdir -p $(DIST); \
 	go get -d; \
 	for p in $(PLATFORMS); do \
-        	echo "Building for $$p"; \
-		BLDCMD=GOOS=$${p/-*/} GOARCH=$${p/*-/} go build -v -ldflags -s -o $(DIST)/git-grab-$$p; \
-		echo $(BLDCMD)
+        echo "Building for $$p"; \
 		GOOS=$${p/-*/} GOARCH=$${p/*-/} go build -v -ldflags -s -o $(DIST)/git-grab-$$p; \
    	done
