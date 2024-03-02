@@ -1,6 +1,6 @@
 PLATFORMS= \
-	darwin-386 \
 	darwin-amd64 \
+	darwin-arm64 \
 	freebsd-386 \
 	freebsd-amd64 \
 	freebsd-arm \
@@ -16,7 +16,9 @@ PLATFORMS= \
 DIST=$(shell pwd)/dist
 
 build:
-	go get -v
+	go get -v; \
+	go build -v -ldflags -s -o $(DIST)/git-grab-test; \
+	ls -al $(DIST) \
 
 all:
 	rm -rf $(DIST); \
