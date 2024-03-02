@@ -20,5 +20,8 @@ jobs:
     - name: Validate environment
       run: go version
 
+    - name: Test go lang (will remove)
+      run: make build
+
     - name: Make all the go versions
       run: make all
