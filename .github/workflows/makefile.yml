@@ -13,6 +13,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with: 
+        go-version: '^1.22.0'
 
-    - name: Run check
+    - name: Validate environment
+      run: go version
+
+    - name: Make all the go versions
       run: make all
