@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/op/go-logging"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
 )
 
-var log = logging.MustGetLogger("git-grab")
+//var log = logging.MustGetLogger("git-grab")
 
 func main() {
 	home := os.Getenv("HOME")
@@ -35,7 +35,7 @@ func main() {
 // Parses the git repository path and determines the folder location on
 // local file system
 func ParseRepo(repo string) string {
-	var server string = ""
+	var domain string = ""
 	var owner string = ""
 	var repoName string = ""
 
@@ -45,7 +45,8 @@ func ParseRepo(repo string) string {
 	basicRepo = strings.TrimSuffix(basicRepo, ".git")
 	var ownerRepoSplit = strings.Split(basicRepo, "/")
 
-	server = strings.Split(basicRepo, ".")[0]
+	var tokens = strings.Split(basicRepo, ".")
+	domain = tokens[len(tokens)-2]
 	owner = ownerRepoSplit[len(ownerRepoSplit)-2]
 	var colonSplit = strings.Split(owner, ":")
 	owner = colonSplit[len(colonSplit)-1]
@@ -53,5 +54,5 @@ func ParseRepo(repo string) string {
 	owner = strings.ToLower(owner)
 	repoName = ownerRepoSplit[len(ownerRepoSplit)-1]
 
-	return fmt.Sprintf("%s/%s/%s", server, owner, repoName)
+	return fmt.Sprintf("%s/%s/%s", domain, owner, repoName)
 }
