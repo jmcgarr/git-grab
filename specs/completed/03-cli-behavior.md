@@ -81,6 +81,36 @@ Clones <repository> into $GIT_GRAB_ROOT (default ~/Projects) under
   `splitArgs(args []string) (passthrough []string, url string)` so it can be
   tested without running git.
 
+## Implementation notes
+
+- `main()` is reduced to `os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))`.
+  `run` holds the logic above and returns the exit code, so help, version,
+  usage, parse errors, the already-exists check, and git's exit-code
+  passthrough are all covered by `TestRun` without touching the network. The
+  passthrough case points git at `https://127.0.0.1:9/...`, which is refused
+  immediately and makes git exit 128.
+- The destination logic lives in `destination(rel string) (string, error)`
+  and is covered by `TestDestination` using `t.Setenv`.
+- `-h`, `--help`, and `--version` are recognized anywhere in the argument
+  list and take precedence over cloning.
+- `git grab --help` never reaches the binary: git rewrites `git <cmd> --help`
+  to `git help <cmd>` before dispatching external commands, and prints
+  `No manual entry for git-grab`. `git grab -h` and `git-grab --help` work.
+  The README tells users to use `-h`.
+- The "last non-dash argument" rule means options placed after the URL
+  mis-select the URL (`git grab <url> --branch main` treats `main` as the
+  URL). `git clone` accepts that order, this tool does not. The README says
+  to put options first. Changing the rule would need a new spec.
+- Hardening from review: the already-exists check uses `os.Lstat` so a
+  dangling symlink counts as occupied; `GIT_GRAB_ROOT` is made absolute with
+  `filepath.Abs` so a relative value gives a clear message; a git process
+  killed by a signal (`ExitCode() == -1`) exits 1 rather than 255.
+- The exit-code passthrough test isolates git from the developer's proxy
+  settings and global config (`no_proxy=*`, `GIT_CONFIG_GLOBAL` pointing at
+  an empty temp file, `GIT_CONFIG_NOSYSTEM=1`, `GIT_TERMINAL_PROMPT=0`), and
+  uses a freshly released loopback port rather than a fixed one. Without
+  this, a configured proxy made the test hang instead of failing fast.
+
 ## Tests
 
 Add `TestSplitArgs` with cases:
