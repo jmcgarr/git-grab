@@ -22,6 +22,10 @@ It behaves like `git clone`; only the destination is computed.
 before starting work and follow the specs in order. Update a spec if the
 implementation needs to deviate from it.
 
+When a spec's work is complete, move its file from `specs/` to
+`specs/completed/` in the same PR that finishes the work (`git mv`). Only
+specs that still have open work live in the top level of `specs/`.
+
 ## Layout
 
 - `main.go` holds everything: `main()` and the pure function `ParseRepo`.

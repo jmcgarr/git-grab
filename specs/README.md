@@ -31,6 +31,12 @@ self-contained unit of work that can be done in one PR.
   a child process. Spec 04 closes it with a documented shell wrapper.
 - A config file. One environment variable is enough.
 
+## Completed specs
+
+When a spec's work is done, move its file into [completed/](completed/) with
+`git mv` in the PR that finishes the work. The top level of this directory
+lists only the specs with open work, so it always shows what is left.
+
 ## Definition of done
 
 - `go vet ./...`, `gofmt -l .` (empty), and `go test ./...` pass on Go 1.26.
