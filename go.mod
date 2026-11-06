@@ -1,3 +1,3 @@
-module jmcgarr/git-grab
+module github.com/jmcgarr/git-grab
 
-go 1.22
+go 1.26

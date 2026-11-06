@@ -60,7 +60,7 @@ all: clean test vet
 		echo "Building $$p"; \
 		ext=""; [[ $$p == windows-* ]] && ext=".exe"; \
 		CGO_ENABLED=0 GOOS=$${p%-*} GOARCH=$${p#*-} \
-		go build -trimpath -ldflags "$(LDFLAGS)" -o $(DIST)/$(BINARY)-$$p$$ext . ; \
+		go build -trimpath -ldflags "$(LDFLAGS)" -o $(DIST)/$(BINARY)-$$p$$ext . || exit 1; \
 	done
 	ls -al $(DIST)
 
@@ -74,6 +74,9 @@ Notes:
 - `-X main.version` feeds the `--version` flag added in spec 03. Until that
   lands the flag is harmless.
 - Add `git-grab` and `*.exe` to `.gitignore`.
+- `|| exit 1` makes the loop stop at the first failed platform. Without it
+  the recipe's exit status is that of the last iteration only, so a broken
+  port would pass CI and ship a release with missing binaries.
 
 ### CI: `.github/workflows/ci.yml`
 
@@ -94,6 +97,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
@@ -120,8 +125,13 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/*
+          fail_on_unmatched_files: true
           generate_release_notes: true
 ```
+
+`fetch-depth: 0` pulls full history and tags so `git describe` in the
+Makefile yields `0.4-3-gabc1234` rather than a bare SHA. The first CI run
+confirmed the default shallow checkout produces the bare SHA.
 
 The release job replaces the manual upload of twelve binaries. Pushing a tag
 builds, tests, and attaches the assets. Release notes can still be edited

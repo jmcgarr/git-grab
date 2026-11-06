@@ -5,3 +5,5 @@ dist/
 src/github.com/op
 .idea/
 *.iml
+git-grab
+*.exe
