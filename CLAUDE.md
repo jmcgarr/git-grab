@@ -28,7 +28,8 @@ specs that still have open work live in the top level of `specs/`.
 
 ## Layout
 
-- `main.go` holds everything: `main()` and the pure function `ParseRepo`.
+- `main.go` holds everything: `main()`, the pure function `ParseRepo`, and
+  its helpers `splitHostPath`, `scpSyntax`, and `domainOf`.
 - `main_test.go` is the only test file. Its expectations define the
   directory scheme; treat them as the spec.
 - `dist/` and `.idea/` are gitignored build and IDE output. Never commit them.
@@ -56,15 +57,24 @@ specs that still have open work live in the top level of `specs/`.
 
 ## Behavior rules encoded in tests
 
+- `ParseRepo` first splits the input into host and path, then derives
+  everything from those two values. Never go back to splitting the whole
+  string on `.`; that is what broke dotted repo names.
 - Domain is the second-level label of the host: `stash.funville.com` ->
   `funville`, `github.com` -> `github`. Do not regress to the first label
-  (that was issue #3).
-- Owner is lowercased. Repo name keeps its case.
-- Strip a trailing `.git`. Names like `foo.github.io` must survive intact.
+  (that was issue #3). IP hosts keep the full address; single-label hosts
+  such as `localhost` keep the label.
+- Owner and any intermediate group segments (GitLab subgroups) are
+  lowercased. Repo name keeps its case.
+- Strip a trailing `.git` and trailing slashes. Dots elsewhere in the name
+  (`foo.github.io`, `Mixed.Case.Repo`) must survive intact.
 - Stash user repos: `~user` becomes `users/user`. A leading `scm/` path
   segment is ignored.
-- Accept ssh, scp-style `git@host:owner/repo`, http(s) with `user@`, and ports.
-- Never panic on user input. Return an error (spec 02).
+- Accept ssh, scp-style `git@host:owner/repo`, http(s) with `user@` or
+  `user:pass@`, ports, and scheme-less `host/owner/repo`.
+- Never panic on user input. Bare names, flags, local paths (absolute,
+  `./`, `../`, Windows drive letters), `file:///` URLs, `.`/`..` path
+  segments, and inputs without an `<owner>/<repo>` path return an error.
 
 ## Conventions
 
