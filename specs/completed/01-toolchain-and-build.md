@@ -97,6 +97,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
@@ -126,6 +128,10 @@ jobs:
           fail_on_unmatched_files: true
           generate_release_notes: true
 ```
+
+`fetch-depth: 0` pulls full history and tags so `git describe` in the
+Makefile yields `0.4-3-gabc1234` rather than a bare SHA. The first CI run
+confirmed the default shallow checkout produces the bare SHA.
 
 The release job replaces the manual upload of twelve binaries. Pushing a tag
 builds, tests, and attaches the assets. Release notes can still be edited
