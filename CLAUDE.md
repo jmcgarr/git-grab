@@ -37,14 +37,18 @@ implementation needs to deviate from it.
   root; it leaves an untracked `git-grab` binary.
 - Test: `go test -cover ./...`
 - Lint: `go vet ./...` and `gofmt -l .` (must print nothing)
-- Cross-compile all platforms: `make all` (writes to `dist/`).
-- The current Makefile uses bash parameter expansion and needs bash, not
-  dash. CI runs on macOS for this reason until spec 01 lands.
+- Cross-compile all platforms: `make all` (writes to `dist/`). It runs
+  `clean`, `test`, and `vet` first.
+- The Makefile sets `SHELL := /bin/bash`, so it works on Ubuntu (dash) too.
+- CI (`.github/workflows/ci.yml`) runs fmt, vet, test, and `make all` on
+  Ubuntu for every push and PR to `master`. Pushing a tag also creates a
+  GitHub release with the `dist/` binaries attached.
 
 ## Environment
 
-- Go 1.22.0 binaries abort on macOS 26 with `missing LC_UUID load command`.
-  Until `go.mod` is bumped, use `GOTOOLCHAIN=go1.26.0 go test ./...`.
+- `go.mod` declares Go 1.26. Any newer local Go works; `go` selects the
+  toolchain automatically. Go 1.22 binaries abort on macOS 26, so do not
+  downgrade `go.mod`.
 
 ## Behavior rules encoded in tests
 
