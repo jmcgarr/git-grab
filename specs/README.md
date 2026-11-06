@@ -19,7 +19,7 @@ self-contained unit of work that can be done in one PR.
 | # | Spec | Why this order |
 |---|------|----------------|
 | 1 | [01-toolchain-and-build.md](completed/01-toolchain-and-build.md) (done) | Nothing built locally runs on macOS 26 until Go is upgraded. CI must be green before code changes land. |
-| 2 | [02-parse-repo.md](02-parse-repo.md) | The core bug cluster. Panics and wrong paths on common URLs. |
+| 2 | [02-parse-repo.md](completed/02-parse-repo.md) (done) | The core bug cluster. Panics and wrong paths on common URLs. |
 | 3 | [03-cli-behavior.md](03-cli-behavior.md) | Option passthrough, home directory, exit codes. Depends on 02 returning errors. |
 | 4 | [04-repo-hygiene.md](04-repo-hygiene.md) | README, module path, dead code, stale branches. Low risk, do last. |
 

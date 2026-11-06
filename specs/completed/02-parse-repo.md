@@ -93,6 +93,24 @@ existing tests and must not change.
 | `` | error | empty |
 | `https://github.com/jmcgarr` | error | no repo segment |
 
+## Hardening added during implementation
+
+Review of the first implementation found inputs outside the table that
+produced wrong directories instead of errors. These rules were added, each
+with a test row:
+
+- `.` and `..` path segments are an error. Without this,
+  `https://github.com/../../../tmp/evil` resolved to a path outside
+  `~/Projects`.
+- A host with no non-empty labels (`.`, `..`) is an error, so `../owner/repo`
+  and `./owner/repo` are rejected as the local paths they are. Empty labels
+  are otherwise dropped, so `github.com.` (trailing-dot FQDN) gives `github`.
+- A single ASCII letter before the colon is a Windows drive, not an scp host.
+  `C:/repos/foo/bar` is an error instead of cloning into `~/Projects/c/...`.
+- Bracketed IPv6 in scp syntax (`git@[::1]:owner/repo`) is split on `]:`.
+- A bare `~` owner is an error rather than producing `users//repo`.
+- Scheme-less input strips `user@` from the host, matching the scp branch.
+
 ## Tests
 
 Replace `TestScenarios` and `AssertEquals` with one table-driven test:
