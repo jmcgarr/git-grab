@@ -1,38 +1,128 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
+// version is set at build time via -ldflags "-X main.version=...".
+var version = "dev"
+
+const usage = `Usage: git grab [git-clone options] <repository>
+
+Clones <repository> into $GIT_GRAB_ROOT (default ~/Projects) under
+<domain>/<owner>/<repo>. All other options are passed to git clone.
+
+  -h, --help     show this help
+      --version  print version
+`
+
 func main() {
-	home := os.Getenv("HOME")
-	usage := `Usage: 
-  git grab <repository>`
+	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+}
 
-	args := os.Args[1:] // get cmdline args without program
-	if len(args) < 1 {
-		fmt.Println(usage)
-		os.Exit(1)
+// run is main without the process exit, so every path short of actually
+// invoking git can be tested. It returns the process exit code.
+func run(args []string, stdout, stderr io.Writer) int {
+	for _, a := range args {
+		switch a {
+		case "-h", "--help":
+			fmt.Fprint(stdout, usage)
+			return 0
+		case "--version":
+			fmt.Fprintln(stdout, "git-grab", version)
+			return 0
+		}
 	}
 
-	repoPath, err := ParseRepo(args[0])
+	passthrough, repo := splitArgs(args)
+	if repo == "" {
+		fmt.Fprint(stderr, usage)
+		return 2
+	}
+
+	rel, err := ParseRepo(repo)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "git-grab:", err)
-		os.Exit(1)
+		fmt.Fprintln(stderr, "git-grab:", err)
+		return 1
 	}
-	cloneDir := fmt.Sprintf("%s/Projects/%s", home, repoPath)
-	cmd := exec.Command("git", "clone", args[0], cloneDir)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	dest, err := destination(rel)
+	if err != nil {
+		fmt.Fprintln(stderr, "git-grab:", err)
+		return 1
+	}
+	// Lstat so a dangling symlink counts as occupied too.
+	if _, err := os.Lstat(dest); err == nil {
+		fmt.Fprintf(stderr, "git-grab: %s already exists\n", dest)
+		return 1
+	}
+
+	cmd := exec.Command("git", append(append([]string{"clone"}, passthrough...), repo, dest)...)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, stdout, stderr
 	if err := cmd.Run(); err != nil {
-		fmt.Fprintln(os.Stderr, "git-grab:", err)
-		os.Exit(1)
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			// git already explained the failure; pass its code through.
+			// ExitCode is -1 when git was killed by a signal.
+			if code := exitErr.ExitCode(); code >= 0 {
+				return code
+			}
+			return 1
+		}
+		fmt.Fprintln(stderr, "git-grab:", err)
+		return 1
 	}
+	return 0
+}
+
+// splitArgs separates git-clone options from the repository URL. The last
+// argument that does not start with "-" is the URL; everything else is
+// forwarded to git clone unchanged and in order. repo is "" when no
+// candidate exists.
+func splitArgs(args []string) (passthrough []string, repo string) {
+	repoIndex := -1
+	for i, a := range args {
+		if !strings.HasPrefix(a, "-") {
+			repoIndex = i
+		}
+	}
+	passthrough = []string{}
+	for i, a := range args {
+		if i != repoIndex {
+			passthrough = append(passthrough, a)
+		}
+	}
+	if repoIndex >= 0 {
+		repo = args[repoIndex]
+	}
+	return passthrough, repo
+}
+
+// destination returns the absolute clone directory for a ParseRepo result:
+// $GIT_GRAB_ROOT, or ~/Projects when unset, joined with rel using the OS
+// path separator. A relative GIT_GRAB_ROOT is resolved against the current
+// directory so messages show where the clone actually went.
+func destination(rel string) (string, error) {
+	root := os.Getenv("GIT_GRAB_ROOT")
+	if root == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		root = filepath.Join(home, "Projects")
+	}
+	root, err := filepath.Abs(root)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(root, filepath.FromSlash(rel)), nil
 }
 
 // ParseRepo returns the path, relative to the projects root, where repo

@@ -28,8 +28,12 @@ specs that still have open work live in the top level of `specs/`.
 
 ## Layout
 
-- `main.go` holds everything: `main()`, the pure function `ParseRepo`, and
-  its helpers `splitHostPath`, `scpSyntax`, and `domainOf`.
+- `main.go` holds everything. `main()` only calls `run(args, stdout, stderr)`
+  and exits with its return value, so every path short of invoking git is
+  testable. `splitArgs` separates git-clone options from the URL,
+  `destination` resolves the clone directory, and the pure function
+  `ParseRepo` (with helpers `splitHostPath`, `scpSyntax`, `domainOf`)
+  computes the relative path.
 - `main_test.go` is the only test file. Its expectations define the
   directory scheme; treat them as the spec.
 - `dist/` and `.idea/` are gitignored build and IDE output. Never commit them.
@@ -80,6 +84,16 @@ specs that still have open work live in the top level of `specs/`.
 
 - gofmt formatting, tabs. `ParseRepo` stays exported so tests can call it.
 - Clone output streams straight to the user's stdout and stderr; git-grab
-  adds nothing on success.
+  adds nothing on success. Stdin is attached so credential prompts work.
+- Exit codes: 0 success, 1 git-grab's own errors (bad URL, destination
+  exists, git not found), 2 usage, and git's own code when the clone fails.
+  When git fails, print nothing extra; git already explained it.
+- Options are walked by hand, not with the `flag` package, because every
+  unknown option must be forwarded to `git clone`. The last argument not
+  starting with `-` is the URL.
+- `GIT_GRAB_ROOT` is the only configuration knob. Default is `~/Projects`
+  via `os.UserHomeDir`, which works on Windows too.
+- `git grab --help` is swallowed by git itself (rewritten to `git help
+  grab`). Only `-h` works as a subcommand; `--help` works as `git-grab`.
 - Keep the tool small. No config files, no new flags beyond `--help` and
   `--version` without a spec.
