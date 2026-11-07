@@ -18,9 +18,11 @@ It behaves like `git clone`; only the destination is computed.
 
 ## Plan of record
 
-`specs/` holds the current fix and cleanup plan. Read `specs/README.md`
-before starting work and follow the specs in order. Update a spec if the
-implementation needs to deviate from it.
+`specs/` holds the plan of record. Read `specs/README.md` before starting
+work. Any open spec at the top level of `specs/` is the next thing to do,
+in numeric order. New features start with a new spec (numbered from 05)
+before any code. Update a spec if the implementation needs to deviate
+from it, and record what the review found.
 
 When a spec's work is complete, move its file from `specs/` to
 `specs/completed/` in the same PR that finishes the work (`git mv`). Only

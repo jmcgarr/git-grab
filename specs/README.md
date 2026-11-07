@@ -1,8 +1,12 @@
 # git-grab: fix and cleanup plan
 
-This directory holds the plan for bringing git-grab up to date. The goal is a
-small, dependency-free CLI that works reliably, not a rewrite. Each spec is a
-self-contained unit of work that can be done in one PR.
+This directory held the plan for bringing git-grab up to date, released as
+0.5. All four specs are done and live in [completed/](completed/). New work
+starts with a new spec here, numbered from 05, following the same shape:
+problem, changes, tests, acceptance.
+
+The goal was a small, dependency-free CLI that works reliably, not a rewrite.
+Each spec is a self-contained unit of work that can be done in one PR.
 
 ## Principles
 
@@ -21,7 +25,7 @@ self-contained unit of work that can be done in one PR.
 | 1 | [01-toolchain-and-build.md](completed/01-toolchain-and-build.md) (done) | Nothing built locally runs on macOS 26 until Go is upgraded. CI must be green before code changes land. |
 | 2 | [02-parse-repo.md](completed/02-parse-repo.md) (done) | The core bug cluster. Panics and wrong paths on common URLs. |
 | 3 | [03-cli-behavior.md](completed/03-cli-behavior.md) (done) | Option passthrough, home directory, exit codes. Depends on 02 returning errors. |
-| 4 | [04-repo-hygiene.md](04-repo-hygiene.md) | README, module path, dead code, stale branches. Low risk, do last. |
+| 4 | [04-repo-hygiene.md](completed/04-repo-hygiene.md) (done) | README, module path, dead code, stale branches. Low risk, do last. |
 
 ## Out of scope
 
