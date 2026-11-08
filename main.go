@@ -1,3 +1,7 @@
+// Command git-grab clones a repository into $GIT_GRAB_ROOT (default
+// ~/Projects) under <domain>/<owner>/<repo>, so checkouts are organized by
+// origin. It is a thin wrapper around git clone that only computes the
+// destination.
 package main
 
 import (
