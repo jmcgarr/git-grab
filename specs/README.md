@@ -1,9 +1,8 @@
 # git-grab: fix and cleanup plan
 
-This directory held the plan for bringing git-grab up to date, released as
-0.5. All four specs are done and live in [completed/](completed/). New work
-starts with a new spec here, numbered from 05, following the same shape:
-problem, changes, tests, acceptance.
+This directory holds the plan of record. The fix and cleanup plan (specs 01
+to 04) shipped as 0.5 and lives in [completed/](completed/). Open specs sit
+at this level and follow the same shape: problem, changes, tests, acceptance.
 
 The goal was a small, dependency-free CLI that works reliably, not a rewrite.
 Each spec is a self-contained unit of work that can be done in one PR.
@@ -26,11 +25,13 @@ Each spec is a self-contained unit of work that can be done in one PR.
 | 2 | [02-parse-repo.md](completed/02-parse-repo.md) (done) | The core bug cluster. Panics and wrong paths on common URLs. |
 | 3 | [03-cli-behavior.md](completed/03-cli-behavior.md) (done) | Option passthrough, home directory, exit codes. Depends on 02 returning errors. |
 | 4 | [04-repo-hygiene.md](completed/04-repo-hygiene.md) (done) | README, module path, dead code, stale branches. Low risk, do last. |
+| 5 | [05-homebrew-tap.md](05-homebrew-tap.md) | `brew install jmcgarr/tap/git-grab`. Designs a tap shared with `dirty` and future tools; most work is in the new tap repo. |
 
 ## Out of scope
 
-- GoReleaser, Homebrew tap, code signing or notarization (issue #2). Worth
-  doing later, but not needed to make the tool correct.
+- GoReleaser, code signing, and notarization (issue #2). Spec 05 adds a
+  Homebrew tap, which sidesteps quarantine for brew users; signing direct
+  downloads remains out of scope.
 - Changing the parent shell's directory after clone (issue #1). Impossible from
   a child process. Spec 04 closes it with a documented shell wrapper.
 - A config file. One environment variable is enough.
