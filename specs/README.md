@@ -26,13 +26,11 @@ Each spec is a self-contained unit of work that can be done in one PR.
 | 3 | [03-cli-behavior.md](completed/03-cli-behavior.md) (done) | Option passthrough, home directory, exit codes. Depends on 02 returning errors. |
 | 4 | [04-repo-hygiene.md](completed/04-repo-hygiene.md) (done) | README, module path, dead code, stale branches. Low risk, do last. |
 | 5 | [05-homebrew-tap.md](05-homebrew-tap.md) | `brew install jmcgarr/tap/git-grab`. Designs a tap shared with `dirty` and future tools; most work is in the new tap repo. |
-| 6 | [06-macos-signing.md](06-macos-signing.md) | Developer ID signing and notarization of the darwin binaries (issue #2), as a composite action `dirty` can call too. |
+| 6 | [06-macos-signing.md](completed/06-macos-signing.md) (done) | Developer ID signing and notarization of the darwin binaries (issue #2), as a composite action `dirty` can call too. |
 
 ## Out of scope
 
-- GoReleaser, code signing, and notarization (issue #2). Spec 05 adds a
-  Homebrew tap, which sidesteps quarantine for brew users; signing direct
-  downloads remains out of scope.
+- GoReleaser. Signing and notarization (issue #2) shipped in 0.6 via spec 06.
 - Changing the parent shell's directory after clone (issue #1). Impossible from
   a child process. Spec 04 closes it with a documented shell wrapper.
 - A config file. One environment variable is enough.
