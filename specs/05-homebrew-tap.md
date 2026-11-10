@@ -128,8 +128,8 @@ Notes:
   binaries are built with `-X main.version=$(git describe --tags)`, which is
   exactly the tag on a tag build.
 - `livecheck` lets `brew livecheck --tap jmcgarr/tap` report formulas that
-  are behind their latest GitHub release. The scheduled fallback below uses
-  it.
+  are behind their latest GitHub release. Handy for a manual check if a
+  dispatch was ever missed.
 
 ### `Formula/dirty.rb`
 
@@ -171,11 +171,9 @@ Each tool keeps its own release pipeline. The tap owns the formula update.
    - Run `brew style`, `brew audit --strict`, `brew install --verbose`, and
      `brew test` on the result.
    - Commit as `git-grab 0.6` on `main`.
-3. **`update-formula.yml`** runs the script on `macos-latest`. Triggers:
-   - `workflow_dispatch` with inputs `formula` and `tag`, so a human can bump
-     from the Actions tab.
-   - `schedule` daily: `brew livecheck --tap jmcgarr/tap --json` lists
-     outdated formulas; bump each. Zero secrets, 24-hour worst case.
+3. **`update-formula.yml`** runs the script on `macos-latest`. Its only
+   trigger is `workflow_dispatch` with inputs `formula` and `tag`. A human
+   can run it from the Actions tab; the tool repos run it as follows.
 4. **Each tool's release job triggers the bump** right after assets upload:
    ```yaml
    - run: gh workflow run update-formula.yml -R jmcgarr/homebrew-tap
@@ -186,7 +184,9 @@ Each tool keeps its own release pipeline. The tap owns the formula update.
    `HOMEBREW_TAP_TOKEN` is one fine-grained PAT scoped to the single repo
    `jmcgarr/homebrew-tap` with Actions: read and write. It is stored as a
    secret in each tool repo. If it is ever missing or expired the step fails
-   visibly and the daily schedule catches up.
+   visibly in the tool's release run; recover by running
+   `update-formula.yml` by hand from the Actions tab, or
+   `bin/update-formula` locally.
 
 The script commits straight to `main` after the in-job checks pass, rather
 than opening a PR. A PR opened with `GITHUB_TOKEN` does not trigger
@@ -245,14 +245,15 @@ secret there once a release with those assets exists, and a LICENSE file.
 - Adding a third formula requires only a new `Formula/*.rb` and a dispatch
   step in that tool's release job. No change to the script or workflows.
 
-## Open questions
+## Decisions (2026-11-09)
 
-- Tap name: `homebrew-tap` (`brew install jmcgarr/tap/x`) is the common
-  convention. `homebrew-tools` is the alternative if "tap" reads oddly.
-  Recommendation: `tap`.
-- Is a 24-hour scheduled fallback with no secrets enough, skipping the PAT
-  and dispatch step entirely? Recommendation: do the dispatch; the PAT is
-  one secret and releases become installable immediately.
-- Should the git-grab release pipeline stop building FreeBSD and OpenBSD
-  binaries now that the install story is brew plus `go install`?
-  Recommendation: keep them; they cost nothing and the formula ignores them.
+- **Tap name: `jmcgarr/homebrew-tap`**, installed as
+  `brew install jmcgarr/tap/<formula>`. `homebrew-git-utils` was considered
+  since both first tools are git tooling, but the generic name leaves room
+  for non-git tools without a second tap or a disruptive rename.
+- **Push only.** Tool release jobs dispatch the bump with
+  `HOMEBREW_TAP_TOKEN`. No scheduled poll; a missed dispatch is recovered by
+  hand. A daily `brew livecheck` schedule can be added later if that ever
+  proves annoying.
+- **Keep the FreeBSD and OpenBSD binaries** in git-grab's release. They cost
+  nothing and the formula ignores them.
