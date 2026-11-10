@@ -26,6 +26,7 @@ Each spec is a self-contained unit of work that can be done in one PR.
 | 3 | [03-cli-behavior.md](completed/03-cli-behavior.md) (done) | Option passthrough, home directory, exit codes. Depends on 02 returning errors. |
 | 4 | [04-repo-hygiene.md](completed/04-repo-hygiene.md) (done) | README, module path, dead code, stale branches. Low risk, do last. |
 | 5 | [05-homebrew-tap.md](05-homebrew-tap.md) | `brew install jmcgarr/tap/git-grab`. Designs a tap shared with `dirty` and future tools; most work is in the new tap repo. |
+| 6 | [06-macos-signing.md](06-macos-signing.md) | Developer ID signing and notarization of the darwin binaries (issue #2), as a composite action `dirty` can call too. |
 
 ## Out of scope
 
