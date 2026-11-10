@@ -25,6 +25,16 @@ Bitbucket Server user repos (`~user`) become `users/user`.
 
 ## Install
 
+With Homebrew on macOS or Linux:
+
+```
+brew install jmcgarr/tap/git-grab
+```
+
+Homebrew asks you to trust the tap on first install; `brew trust jmcgarr/tap`
+answers once for everything in it. Homebrew downloads carry no quarantine
+flag, so there is nothing else to approve.
+
 With Go 1.26 or newer:
 
 ```
@@ -33,7 +43,7 @@ go install github.com/jmcgarr/git-grab@latest
 
 Or download a binary for your platform from the
 [releases page](https://github.com/jmcgarr/git-grab/releases), rename it to
-`git-grab`, make it executable, and put it on your `PATH`. On macOS the
+`git-grab`, make it executable, and put it on your `PATH`. On macOS a direct
 download is unsigned, so clear the quarantine flag once:
 
 ```
@@ -106,8 +116,10 @@ grab() {
 ## Known issues
 
 - Windows binaries are built but untested.
-- macOS binaries are unsigned and will be quarantined until you run the
-  `xattr` command above ([#2](https://github.com/jmcgarr/git-grab/issues/2)).
+- macOS binaries downloaded directly from the releases page are unsigned
+  and will be quarantined until you run the `xattr` command above
+  ([#2](https://github.com/jmcgarr/git-grab/issues/2)). Homebrew installs
+  are not affected.
 
 ## Development
 
@@ -119,5 +131,7 @@ make fmt     # fails if gofmt would change anything
 make all     # cross-compiles every platform into dist/
 ```
 
-Releases are tags on `master`. Pushing a tag builds every platform in CI and
-attaches the binaries to a GitHub release.
+Releases are tags on `master`. Pushing a tag builds every platform in CI,
+attaches the binaries and a `SHA256SUMS` file to a GitHub release, and asks
+[jmcgarr/homebrew-tap](https://github.com/jmcgarr/homebrew-tap) to update
+its formula.

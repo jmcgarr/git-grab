@@ -220,6 +220,31 @@ Covered by its spec 007 (multi-platform assets, `SHA256SUMS`,
 version-from-tag). Add the `gh workflow run` step and `HOMEBREW_TAP_TOKEN`
 secret there once a release with those assets exists, and a LICENSE file.
 
+## Progress (2026-11-09)
+
+Steps 1 to 3 below are done. The tap exists at
+https://github.com/jmcgarr/homebrew-tap with `Formula/git-grab.rb`,
+`bin/update-formula`, and both workflows; `brew install jmcgarr/tap/git-grab`
+and `brew test` pass on macOS arm64. Things learned that differ from the
+design above:
+
+- **No `version` line.** `brew audit --strict` rejects an explicit version
+  when it can be read from the URL. The release tag is written literally
+  into each `url`, and the update script swaps the `/releases/download/<tag>/`
+  segment rather than substituting `#{version}`.
+- **`brew trust`.** Homebrew 7 refuses to load formulas from a third-party
+  tap until the user runs `brew trust jmcgarr/tap` (or accepts the prompt on
+  first install). CI does this; both READMEs tell users to.
+- **`livecheck` goes before the platform blocks**, per `brew style`.
+- **`Homebrew/actions` has no `master` branch** any more; workflows
+  reference `@main`.
+- `brew audit` refuses file paths, so the script only audits when run from
+  the tapped checkout. CI always is; locally, validate by pulling into
+  `$(brew --repository jmcgarr/tap)`.
+
+Still open: the `HOMEBREW_TAP_TOKEN` secret in git-grab (maintainer creates
+the PAT), and step 4, dirty.
+
 ## Rollout
 
 1. git-grab PR: `SHA256SUMS` in release, README install section. Small, no
