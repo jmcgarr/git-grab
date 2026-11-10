@@ -14,7 +14,9 @@ It behaves like `git clone`; only the destination is computed.
   that is not on an open PR is unfinished work.
 - Commit messages are short plain sentences, no type prefix. Reference issue
   numbers where one exists (`Fixes #3`).
-- Releases are tags `0.N` on `master` after the PR merges.
+- Releases are tags `0.N` on `master` after the PR merges. The tag push
+  builds the release and dispatches a formula bump to
+  `jmcgarr/homebrew-tap` (needs the `HOMEBREW_TAP_TOKEN` secret).
 
 ## Plan of record
 

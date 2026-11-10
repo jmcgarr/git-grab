@@ -21,6 +21,7 @@ jobs:
       - run: make vet
       - run: make test
       - run: make all
+      - run: cd dist && shasum -a 256 * > SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
           name: dist
@@ -32,6 +33,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -42,3 +45,10 @@ jobs:
           files: dist/*
           fail_on_unmatched_files: true
           generate_release_notes: true
+      # Bumps Formula/git-grab.rb in jmcgarr/homebrew-tap. Skipped when the
+      # fine-grained PAT (Actions: read/write on that one repo) is not set.
+      - name: Update Homebrew tap
+        if: env.HOMEBREW_TAP_TOKEN != ''
+        env:
+          GH_TOKEN: ${{ env.HOMEBREW_TAP_TOKEN }}
+        run: gh workflow run update-formula.yml -R jmcgarr/homebrew-tap -f formula=git-grab -f tag=${{ github.ref_name }}
