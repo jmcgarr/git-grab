@@ -134,7 +134,8 @@ fi
 
 p8="$tmp/AuthKey.p8"
 printf '%s' "$NOTARY_KEY" | base64 -d > "$p8"
-notary=(xcrun notarytool --key "$p8" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID")
+# notarytool only accepts these after the subcommand, never before it.
+auth=(--key "$p8" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID")
 
 json_field() { # json_field NAME <<< JSON  (flat string fields only)
   sed -n "s/.*\"$1\" *: *\"\([^\"]*\)\".*/\1/p" | head -1
@@ -147,13 +148,13 @@ for f in "$@"; do
   # notarytool exits non-zero on timeouts, auth errors, and (in recent
   # versions) an Invalid verdict; keep its output either way so the log can
   # be fetched.
-  result=$("${notary[@]}" submit "$zip" --wait --timeout 30m --output-format json 2>&1) || true
+  result=$(xcrun notarytool submit "$zip" "${auth[@]}" --wait --timeout 30m --output-format json 2>&1) || true
   rm -f "$zip"
   status=$(json_field status <<<"$result")
   id=$(json_field id <<<"$result")
   if [ "$status" != "Accepted" ]; then
     echo "$result" >&2
-    if [ -n "$id" ]; then "${notary[@]}" log "$id" >&2 || true; fi
+    if [ -n "$id" ]; then xcrun notarytool log "$id" "${auth[@]}" >&2 || true; fi
     die "notarization of $f ended with status '${status:-unknown}'"
   fi
   note "notarized $f (submission $id)"

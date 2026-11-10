@@ -18,10 +18,12 @@ repos call, is the point of this spec.
 
 ## What exists already
 
-- A **Developer ID Application** certificate for team `WNP822AXPW` is in
-  the maintainer's login keychain, valid until 2027-02-01. No new Apple
-  enrollment is needed. Renewal lands in early 2027 and means re-exporting
-  the certificate and updating one secret.
+- Two **Developer ID Application** certificates for team `WNP822AXPW` are
+  in the maintainer's login keychain under the same name: one valid until
+  2027-02-01 (hash `AD33...`) and a renewal valid until 2030-04-07 (hash
+  `8801...`). No new Apple enrollment is needed. The `.p12` first exported
+  for CI holds the 2027 one; re-exporting the 2030 one and updating
+  `MACOS_CERTIFICATE` postpones the renewal chore.
 - An App Store Connect API key for `notarytool` does **not** exist yet (or
   is not recorded). Creating one is a maintainer step below.
 - dirty holds `MACOS_CERTIFICATE` and `MAOS_CERTIFICATE_PWD` secrets from
