@@ -242,8 +242,12 @@ design above:
   the tapped checkout. CI always is; locally, validate by pulling into
   `$(brew --repository jmcgarr/tap)`.
 
-Still open: the `HOMEBREW_TAP_TOKEN` secret in git-grab (maintainer creates
-the PAT), and step 4, dirty.
+Update (2026-11-10): step 4 is done; `Formula/dirty.rb` is in the tap. The
+git-grab 0.6 formula bump was dispatched by hand (`gh workflow run
+update-formula.yml -f formula=git-grab -f tag=0.6`) because the
+`HOMEBREW_TAP_TOKEN` secret is still unset in git-grab. Creating that PAT is
+a maintainer chore, not open spec work; until it exists, run the same
+dispatch after each release.
 
 ## Rollout
 
