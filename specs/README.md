@@ -25,7 +25,7 @@ Each spec is a self-contained unit of work that can be done in one PR.
 | 2 | [02-parse-repo.md](completed/02-parse-repo.md) (done) | The core bug cluster. Panics and wrong paths on common URLs. |
 | 3 | [03-cli-behavior.md](completed/03-cli-behavior.md) (done) | Option passthrough, home directory, exit codes. Depends on 02 returning errors. |
 | 4 | [04-repo-hygiene.md](completed/04-repo-hygiene.md) (done) | README, module path, dead code, stale branches. Low risk, do last. |
-| 5 | [05-homebrew-tap.md](05-homebrew-tap.md) | `brew install jmcgarr/tap/git-grab`. Designs a tap shared with `dirty` and future tools; most work is in the new tap repo. |
+| 5 | [05-homebrew-tap.md](completed/05-homebrew-tap.md) (done) | `brew install jmcgarr/tap/git-grab`. Designs a tap shared with `dirty` and future tools; most work is in the new tap repo. |
 | 6 | [06-macos-signing.md](completed/06-macos-signing.md) (done) | Developer ID signing and notarization of the darwin binaries (issue #2), as a composite action `dirty` can call too. |
 
 ## Out of scope
