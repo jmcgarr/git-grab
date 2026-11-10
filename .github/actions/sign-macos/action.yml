@@ -1,0 +1,47 @@
+name: Sign and notarize macOS binaries
+description: >-
+  Codesigns bare Mach-O files with a Developer ID Application identity
+  (hardened runtime, timestamp) and notarizes them with notarytool. When no
+  certificate is provided the files are left untouched with a warning, so tag
+  builds still release in forks and dry runs.
+
+inputs:
+  files:
+    description: Shell glob of Mach-O files to sign, e.g. dist/git-grab-darwin-*
+    required: true
+  certificate:
+    description: Base64 .p12 containing the Developer ID Application certificate and private key
+    required: false
+    default: ""
+  certificate-password:
+    description: Password for the .p12
+    required: false
+    default: ""
+  notary-key-id:
+    description: App Store Connect API key ID
+    required: false
+    default: ""
+  notary-issuer-id:
+    description: App Store Connect issuer ID
+    required: false
+    default: ""
+  notary-key:
+    description: Base64 .p8 App Store Connect API key
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        FILES: ${{ inputs.files }}
+        MACOS_CERTIFICATE: ${{ inputs.certificate }}
+        MACOS_CERTIFICATE_PASSWORD: ${{ inputs.certificate-password }}
+        NOTARY_KEY_ID: ${{ inputs.notary-key-id }}
+        NOTARY_ISSUER_ID: ${{ inputs.notary-issuer-id }}
+        NOTARY_KEY: ${{ inputs.notary-key }}
+      # $FILES is deliberately unquoted so bash word-splits and glob-expands
+      # it. Going through an environment variable (not a ${{ }} template in
+      # the script text) means the input can never be evaluated as code.
+      run: '"$GITHUB_ACTION_PATH/sign-macos.sh" $FILES'

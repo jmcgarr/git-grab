@@ -27,9 +27,36 @@ jobs:
           name: dist
           path: dist/
 
-  release:
+  # Signs and notarizes the darwin binaries. Without the signing secrets the
+  # action warns and passes the files through unchanged, so the release
+  # still happens. Checksums are regenerated because signing changes bytes.
+  sign-macos:
     if: startsWith(github.ref, 'refs/tags/')
     needs: check
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - uses: ./.github/actions/sign-macos
+        with:
+          files: dist/git-grab-darwin-*
+          certificate: ${{ secrets.MACOS_CERTIFICATE }}
+          certificate-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          notary-key-id: ${{ secrets.NOTARY_KEY_ID }}
+          notary-issuer-id: ${{ secrets.NOTARY_ISSUER_ID }}
+          notary-key: ${{ secrets.NOTARY_KEY }}
+      - run: cd dist && rm -f SHA256SUMS && shasum -a 256 * > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-release
+          path: dist/
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: sign-macos
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -38,17 +65,20 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: dist
+          name: dist-release
           path: dist
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/*
           fail_on_unmatched_files: true
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
       # Bumps Formula/git-grab.rb in jmcgarr/homebrew-tap. Skipped when the
-      # fine-grained PAT (Actions: read/write on that one repo) is not set.
+      # fine-grained PAT (Actions: read/write on that one repo) is not set,
+      # and for pre-release tags such as 0.6-rc1.
       - name: Update Homebrew tap
-        if: env.HOMEBREW_TAP_TOKEN != ''
+        if: env.HOMEBREW_TAP_TOKEN != '' && !contains(github.ref_name, '-')
         env:
           GH_TOKEN: ${{ env.HOMEBREW_TAP_TOKEN }}
-        run: gh workflow run update-formula.yml -R jmcgarr/homebrew-tap -f formula=git-grab -f tag=${{ github.ref_name }}
+          TAG: ${{ github.ref_name }}
+        run: gh workflow run update-formula.yml -R jmcgarr/homebrew-tap -f formula=git-grab -f "tag=$TAG"

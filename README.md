@@ -43,8 +43,10 @@ go install github.com/jmcgarr/git-grab@latest
 
 Or download a binary for your platform from the
 [releases page](https://github.com/jmcgarr/git-grab/releases), rename it to
-`git-grab`, make it executable, and put it on your `PATH`. On macOS a direct
-download is unsigned, so clear the quarantine flag once:
+`git-grab`, make it executable, and put it on your `PATH`. From 0.6 on, the
+macOS binaries are signed with a Developer ID and notarized by Apple, so
+they run without any Gatekeeper step. For 0.5 and older, clear the
+quarantine flag once:
 
 ```
 xattr -d com.apple.quarantine git-grab
@@ -116,10 +118,8 @@ grab() {
 ## Known issues
 
 - Windows binaries are built but untested.
-- macOS binaries downloaded directly from the releases page are unsigned
-  and will be quarantined until you run the `xattr` command above
-  ([#2](https://github.com/jmcgarr/git-grab/issues/2)). Homebrew installs
-  are not affected.
+- macOS binaries from releases before 0.6 are unsigned and need the
+  `xattr` command above. 0.6 and later are signed and notarized.
 
 ## Development
 
@@ -132,6 +132,8 @@ make all     # cross-compiles every platform into dist/
 ```
 
 Releases are tags on `master`. Pushing a tag builds every platform in CI,
-attaches the binaries and a `SHA256SUMS` file to a GitHub release, and asks
+signs and notarizes the macOS binaries, attaches everything plus a
+`SHA256SUMS` file to a GitHub release, and asks
 [jmcgarr/homebrew-tap](https://github.com/jmcgarr/homebrew-tap) to update
-its formula.
+its formula. A tag containing `-` (such as `0.6-rc1`) is marked as a
+pre-release and does not touch the tap.

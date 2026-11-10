@@ -15,8 +15,13 @@ It behaves like `git clone`; only the destination is computed.
 - Commit messages are short plain sentences, no type prefix. Reference issue
   numbers where one exists (`Fixes #3`).
 - Releases are tags `0.N` on `master` after the PR merges. The tag push
-  builds the release and dispatches a formula bump to
-  `jmcgarr/homebrew-tap` (needs the `HOMEBREW_TAP_TOKEN` secret).
+  builds the release, signs and notarizes the darwin binaries
+  (`.github/actions/sign-macos`, needs the five `MACOS_*`/`NOTARY_*`
+  secrets; without them it warns and ships unsigned), and dispatches a
+  formula bump to `jmcgarr/homebrew-tap` (needs `HOMEBREW_TAP_TOKEN`).
+  Tags containing `-` are pre-releases and skip the tap.
+- The signing script is shared with `dirty`, which calls the action by
+  path. Keep its interface (inputs, env names, exit behavior) stable.
 
 ## Plan of record
 

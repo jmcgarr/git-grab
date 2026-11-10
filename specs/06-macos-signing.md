@@ -18,10 +18,12 @@ repos call, is the point of this spec.
 
 ## What exists already
 
-- A **Developer ID Application** certificate for team `WNP822AXPW` is in
-  the maintainer's login keychain, valid until 2027-02-01. No new Apple
-  enrollment is needed. Renewal lands in early 2027 and means re-exporting
-  the certificate and updating one secret.
+- Two **Developer ID Application** certificates for team `WNP822AXPW` are
+  in the maintainer's login keychain under the same name: one valid until
+  2027-02-01 (hash `AD33...`) and a renewal valid until 2030-04-07 (hash
+  `8801...`). No new Apple enrollment is needed. The `.p12` first exported
+  for CI holds the 2027 one; re-exporting the 2030 one and updating
+  `MACOS_CERTIFICATE` postpones the renewal chore.
 - An App Store Connect API key for `notarytool` does **not** exist yet (or
   is not recorded). Creating one is a maintainer step below.
 - dirty holds `MACOS_CERTIFICATE` and `MAOS_CERTIFICATE_PWD` secrets from
@@ -86,9 +88,9 @@ Script steps, all in one bash process so a `trap ... EXIT` can clean up:
    --timeout 30m`. On any status other than `Accepted`, run `notarytool log`
    for the submission ID and fail. Delete the zip; the binary itself is what
    ships.
-7. `spctl --assess --type execute --verbose=2 "$f"` must report
-   `source=Notarized Developer ID`. This is the real acceptance check and
-   runs on the runner before upload.
+7. Confirm the ticket is visible (see implementation notes: `codesign
+   --check-notarization`, not `spctl`). This is the real acceptance check
+   and runs on the runner before upload.
 8. Trap: `security delete-keychain`, remove the `.p12`, `.p8`, and zips.
    Runs on success and failure.
 
@@ -146,13 +148,46 @@ the action.
 
 - No secret value is ever a command-line argument, echoed, or written to a
   file that outlives the job. Temp files live under `$RUNNER_TEMP` and are
-  removed by the trap.
+  removed by the trap. One documented exception: `security import -P` has
+  no non-interactive alternative, so the `.p12` password is briefly an
+  argument on the single-tenant, ephemeral runner.
+- Workflow inputs and `github.*` values reach shell steps only through
+  environment variables, never as `${{ }}` templates inside `run:` text.
 - The signing job runs only on tag pushes. GitHub does not expose secrets to
   `pull_request` runs from forks anyway; the `if` makes it explicit.
 - The maintainer exports the certificate and creates the API key
   personally and sets the secrets with `gh secret set`. The assistant never
   sees the `.p12`, its password, or the `.p8`.
 - Run the `security-review` skill on the branch before opening the PR.
+
+## Implementation notes (2026-11-10)
+
+Deviations from the algorithm above, found while implementing and in review:
+
+- **Identity selection.** Identities are selected by SHA-1 hash, not name,
+  and when several `Developer ID Application` identities match, the one
+  expiring last is used with a warning rather than failing. The maintainer's
+  login keychain holds a renewed certificate next to the old one under the
+  same name; signing by name is ambiguous and "fail on more than one" would
+  make the local dry run impossible. In CI the `.p12` holds one identity, so
+  the rule is moot there.
+- **Keychain handling.** `security find-identity` and `find-certificate`
+  take the keychain positionally; only `codesign` takes `--keychain`. The
+  temp keychain is added to the front of the user search list so the
+  Developer ID intermediate resolves through the normal chain, and the
+  original list is restored in the trap.
+- **Verification uses `codesign`, not `spctl`.** `spctl --assess --type
+  execute` rejects every bare Mach-O with "does not seem to be an app", even
+  notarized ones, so it cannot be the acceptance check. The script runs
+  `codesign --verify --verbose -R="notarized" --check-notarization`, which
+  exits 0 only when Apple's ticket is present, with retries for propagation.
+  The acceptance criteria below are updated to match.
+- **`notarytool` exit status.** Its output is captured even on non-zero exit
+  so the `Invalid` log can be fetched.
+- **`security import -P`** is the one secret on a command line; see the
+  security rules.
+- **README** keeps a Known Issues line for pre-0.6 downloads rather than
+  deleting it, since 0.5 binaries stay on the releases page.
 
 ## Maintainer steps (cannot be automated)
 
@@ -191,7 +226,7 @@ the action.
   warns and passes the binaries through unsigned; the release is created
   as before. Delete the tag and release.
 - **Full run.** After secrets are set, push `0.6-rc2`. Check the job log for
-  `source=Notarized Developer ID`. Download `git-grab-darwin-arm64` from
+  `verified notarized:` on both files. Download `git-grab-darwin-arm64` from
   the release page in Safari, `chmod +x`, run `./git-grab-darwin-arm64
   --version`. No Gatekeeper dialog and no `xattr` needed. Delete tag and
   release.
@@ -205,8 +240,8 @@ the action.
 - Tag builds produce darwin binaries where `codesign -dvv` shows
   `Authority=Developer ID Application: Joseph Mcgarr (WNP822AXPW)`, a
   `Timestamp=`, and `flags=0x10000(runtime)`.
-- `spctl --assess --type execute` on a freshly downloaded release binary
-  reports `accepted` with `source=Notarized Developer ID`.
+- `codesign --verify -R="notarized" --check-notarization` on a freshly
+  downloaded release binary exits 0.
 - A tag build with no signing secrets still produces a release, with a
   visible warning in the job log.
 - README's install section drops the `xattr` instruction for current
