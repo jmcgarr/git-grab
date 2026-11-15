@@ -40,10 +40,11 @@ rules encoded in tests" maps to one obviously named piece of code.
    `git-grab: <err>` to stderr and returns 1, and use it for the four error
    exits. The "already exists" message becomes
    `fail(fmt.Errorf("%s already exists", dest))`, same text as today.
-   Extract the exec error mapping into `gitExitCode(err error) int`:
-   `ExitError` with code >= 0 passes through, -1 (signal) and any other
-   error become 1. `run` prints `git-grab:` only for non-`ExitError`
-   failures, as today.
+   Extract the exec error mapping into `gitExitCode(err error) (code int,
+   ok bool)`: ok is false unless err is an `ExitError`; code >= 0 passes
+   through and -1 (signal) becomes 1. `run` prints `git-grab:` only when
+   ok is false, as today. (Returning a bare int would make `run` repeat
+   the `errors.As` check to decide whether to print; found in review.)
 3. `splitArgs`: one reverse scan that returns at the first argument not
    starting with `-`. Drop `passthrough = []string{}`; `slices.Equal`
    already treats nil and empty as equal. Do not mutate the caller's
