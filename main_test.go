@@ -105,7 +105,8 @@ func TestDestination(t *testing.T) {
 		t.Skip("no home directory:", err)
 	}
 	absRoot := t.TempDir()
-	// A relative GIT_GRAB_ROOT resolves against the working directory.
+	// Run every row from a known directory so the relative-root row can
+	// assert its full path; the absolute rows are unaffected.
 	cwd := t.TempDir()
 	t.Chdir(cwd)
 	tail := filepath.Join("github", "jmcgarr", "git-grab")
