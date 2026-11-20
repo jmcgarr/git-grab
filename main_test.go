@@ -41,6 +41,9 @@ func TestParseRepo(t *testing.T) {
 		// Hardening beyond the spec table, found in review.
 		{"ssh://git@[::1]/owner/repo.git", "::1/owner/repo", false},
 		{"git@[::1]:owner/repo.git", "::1/owner/repo", false},
+		{"git@host.com:owner/re@po", "host/owner/re@po", false},
+		{"git@:owner/repo", "", true},
+		{":x.y/owner/repo", "", true},
 		{"https://github.com./jmcgarr/repo.git", "github/jmcgarr/repo", false},
 		{"user@github.com/jmcgarr/repo", "github/jmcgarr/repo", false},
 		{"https://github.com/jmcgarr/repo?ref=main#readme", "github/jmcgarr/repo", false},
