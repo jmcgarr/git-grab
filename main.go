@@ -140,41 +140,18 @@ func ParseRepo(repo string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	// Path segments: strip surrounding slashes and a trailing .git, then
-	// split. Drop empty segments and Bitbucket Server's leading "scm".
-	path = strings.Trim(path, "/")
-	path = strings.TrimSuffix(path, ".git")
-	var segments []string
-	for _, s := range strings.Split(path, "/") {
-		if s == "." || s == ".." {
-			// Would escape the projects root once joined to a directory.
-			return "", noOwnerRepoError(repo)
-		}
-		if s != "" {
-			segments = append(segments, s)
-		}
-	}
-	if len(segments) > 0 && segments[0] == "scm" {
-		segments = segments[1:]
-	}
-	if len(segments) < 2 {
-		return "", noOwnerRepoError(repo)
-	}
-
-	// Owner: Stash user repos "~user" become "users/user".
-	owner := segments[0]
-	if strings.HasPrefix(owner, "~") {
-		if len(owner) == 1 {
-			return "", noOwnerRepoError(repo)
-		}
-		owner = "users/" + owner[1:]
-	}
-
-	// A host made only of dots ("." or "..") has no usable domain.
 	domain := domainOf(host)
 	if domain == "" {
+		// A host made only of dots ("." or "..") has no usable domain.
 		return "", noHostError(repo)
+	}
+	segments, err := pathSegments(path, repo)
+	if err != nil {
+		return "", err
+	}
+	owner, err := ownerDir(segments[0], repo)
+	if err != nil {
+		return "", err
 	}
 
 	parts := []string{domain, strings.ToLower(owner)}
@@ -186,49 +163,58 @@ func ParseRepo(repo string) (string, error) {
 	return strings.Join(parts, "/"), nil
 }
 
+// pathSegments splits a URL path into its segments: surrounding slashes
+// and a trailing .git are trimmed, empty segments dropped, and Bitbucket
+// Server's leading "scm" removed. At least owner and name must remain, and
+// "." or ".." (which would escape the projects root) is an error.
+func pathSegments(path, repo string) ([]string, error) {
+	path = strings.TrimSuffix(strings.Trim(path, "/"), ".git")
+	segments := strings.FieldsFunc(path, func(r rune) bool { return r == '/' })
+	if slices.Contains(segments, ".") || slices.Contains(segments, "..") {
+		return nil, noOwnerRepoError(repo)
+	}
+	if len(segments) > 0 && segments[0] == "scm" {
+		segments = segments[1:]
+	}
+	if len(segments) < 2 {
+		return nil, noOwnerRepoError(repo)
+	}
+	return segments, nil
+}
+
+// ownerDir rewrites a Stash user owner "~user" to "users/user". A bare "~"
+// has no user name and is an error.
+func ownerDir(owner, repo string) (string, error) {
+	if !strings.HasPrefix(owner, "~") {
+		return owner, nil
+	}
+	if len(owner) == 1 {
+		return "", noOwnerRepoError(repo)
+	}
+	return "users/" + owner[1:], nil
+}
+
 // splitHostPath separates a remote URL into its host and path. It accepts
 // scheme URLs (ssh://, https://), scp syntax (git@host:path), and bare
 // host/owner/name. Anything else, including local paths, is an error.
 func splitHostPath(repo string) (host, path string, err error) {
-	switch {
-	case strings.Contains(repo, "://"):
+	if strings.Contains(repo, "://") {
 		u, perr := url.Parse(repo)
 		if perr != nil || u.Hostname() == "" {
 			return "", "", noHostError(repo)
 		}
 		return u.Hostname(), u.Path, nil
-
-	case scpSyntax(repo):
-		hostPart := repo
-		if at := strings.Index(hostPart, "@"); at >= 0 && at < strings.Index(hostPart, ":") {
-			hostPart = hostPart[at+1:]
-		}
-		var pathPart string
-		if strings.HasPrefix(hostPart, "[") {
-			// Bracketed IPv6: git@[::1]:owner/repo. Cut after the bracket.
-			var found bool
-			hostPart, pathPart, found = strings.Cut(hostPart[1:], "]:")
-			if !found {
-				return "", "", noHostError(repo)
-			}
-		} else {
-			hostPart, pathPart, _ = strings.Cut(hostPart, ":")
-		}
-		if hostPart == "" {
-			return "", "", noHostError(repo)
-		}
-		return hostPart, pathPart, nil
-
-	default:
-		first, rest, found := strings.Cut(repo, "/")
-		if at := strings.LastIndex(first, "@"); at >= 0 {
-			first = first[at+1:]
-		}
-		if !found || !strings.Contains(first, ".") {
-			return "", "", noHostError(repo)
-		}
-		return first, rest, nil
 	}
+	if host, path, ok := scpSplit(repo); ok {
+		return host, path, nil
+	}
+	first, rest, found := strings.Cut(repo, "/")
+	first = stripUserInfo(first)
+	// A ":" here means scpSplit rejected it (empty host, drive letter).
+	if !found || !strings.Contains(first, ".") || strings.Contains(first, ":") {
+		return "", "", noHostError(repo)
+	}
+	return first, rest, nil
 }
 
 // noHostError is returned when repo has no usable host, so it cannot be a
@@ -243,23 +229,50 @@ func noOwnerRepoError(repo string) error {
 	return fmt.Errorf("expected <owner>/<repo> in %q", repo)
 }
 
-// scpSyntax reports whether repo looks like [user@]host:path, i.e. it has a
-// ":" before the first "/". A single letter before the colon is a Windows
+// scpSplit splits scp syntax [user@]host:path. It applies only when a ":"
+// comes before the first "/", and a single letter before it is a Windows
 // drive (C:/repos/foo), not a host, which is the rule git itself uses.
-func scpSyntax(repo string) bool {
+// ok is false for anything else, for an empty host, and for an
+// unterminated bracketed host.
+func scpSplit(repo string) (host, path string, ok bool) {
 	colon := strings.Index(repo, ":")
 	if colon < 0 {
-		return false
+		return "", "", false
 	}
 	if colon == 1 && isASCIILetter(repo[0]) {
-		return false
+		return "", "", false
 	}
-	slash := strings.Index(repo, "/")
-	return slash < 0 || colon < slash
+	if slash := strings.Index(repo, "/"); slash >= 0 && slash < colon {
+		return "", "", false
+	}
+	// User info is only stripped from the part before the colon, so an
+	// "@" in the path is left alone.
+	rest := stripUserInfo(repo[:colon]) + repo[colon:]
+	if strings.HasPrefix(rest, "[") {
+		// Bracketed IPv6: git@[::1]:owner/repo. Cut after the bracket.
+		host, path, ok = strings.Cut(rest[1:], "]:")
+	} else {
+		host, path, ok = strings.Cut(rest, ":")
+	}
+	if !ok || host == "" {
+		return "", "", false
+	}
+	return host, path, true
 }
 
+// isASCIILetter reports whether c is a-z or A-Z, the only characters that
+// can be a Windows drive letter.
 func isASCIILetter(c byte) bool {
 	return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
+}
+
+// stripUserInfo drops "user@" or "user:pass@" from the front of s, that
+// is everything through the last "@".
+func stripUserInfo(s string) string {
+	if at := strings.LastIndex(s, "@"); at >= 0 {
+		return s[at+1:]
+	}
+	return s
 }
 
 // domainOf reduces a host to the directory name used under the projects
@@ -270,18 +283,9 @@ func domainOf(host string) string {
 	if net.ParseIP(host) != nil {
 		return host
 	}
-	var labels []string
-	for _, l := range strings.Split(host, ".") {
-		if l != "" {
-			labels = append(labels, l)
-		}
-	}
-	switch len(labels) {
-	case 0:
+	labels := strings.FieldsFunc(host, func(r rune) bool { return r == '.' })
+	if len(labels) == 0 {
 		return ""
-	case 1:
-		return labels[0]
-	default:
-		return labels[len(labels)-2]
 	}
+	return labels[max(len(labels)-2, 0)] // a single label is kept as is
 }
