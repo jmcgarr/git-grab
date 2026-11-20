@@ -17,7 +17,8 @@ func TestParseRepo(t *testing.T) {
 		wantErr  bool
 	}{
 		// These rows define the directory scheme and must not change.
-		// Domain: second-level label, whole IP, single-label host, trailing-dot host.
+		// Domain: second-level label, whole IP, single-label host,
+		// trailing-dot host.
 		{"https://github.com/sstephenson/bats.git", "github/sstephenson/bats", false},
 		{"ssh://git@stash.funville.com:7999/hackday/template.git", "funville/hackday/template", false},
 		{"https://192.168.1.10/owner/repo.git", "192.168.1.10/owner/repo", false},
@@ -30,7 +31,8 @@ func TestParseRepo(t *testing.T) {
 		{"https://bitbucket.org/Team/Repo.git", "bitbucket/team/Repo", false},
 		{"https://gitlab.com/group/sub/project.git", "gitlab/group/sub/project", false},
 
-		// Trailing .git and slashes are stripped; dots elsewhere in the name survive.
+		// Trailing .git and slashes are stripped; dots elsewhere in the
+		// name survive.
 		{"git@github.com:sstephenson/bats.git", "github/sstephenson/bats", false},
 		{"https://github.com/jmcgarr/git-grab/", "github/jmcgarr/git-grab", false},
 		{"git@github.com:nebula-plugins/nebula-plugins.github.io.git", "github/nebula-plugins/nebula-plugins.github.io", false},
@@ -42,7 +44,8 @@ func TestParseRepo(t *testing.T) {
 		{"http://jmcgarr@stash.funville.com/scm/~jmcgarr/homedir.git", "funville/users/jmcgarr/homedir", false},
 		{"http://jmcgarr@stash.funville.com/scm/hackday/template.git", "funville/hackday/template", false},
 
-		// Accepted URL forms: scp (IPv6, @ in path), user and user:pass, ports, scheme-less, query and fragment.
+		// Accepted URL forms: scp (IPv6, @ in path), user and user:pass,
+		// ports, scheme-less, query and fragment.
 		{"git@[::1]:owner/repo.git", "::1/owner/repo", false},
 		{"git@host.com:owner/re@po", "host/owner/re@po", false},
 		{"https://user:pass@github.com/jmcgarr/repo.git", "github/jmcgarr/repo", false},
@@ -51,7 +54,9 @@ func TestParseRepo(t *testing.T) {
 		{"user@github.com/jmcgarr/repo", "github/jmcgarr/repo", false},
 		{"https://github.com/jmcgarr/repo?ref=main#readme", "github/jmcgarr/repo", false},
 
-		// Rejected inputs: local paths, drive letters, traversal, bare names, flags, file://, missing owner/repo, empty, empty scp host, leading colon, bare ~.
+		// Rejected inputs: local paths, drive letters, traversal, bare
+		// names, flags, file://, missing owner/repo, empty input, empty scp
+		// host, leading colon, bare ~.
 		{"../owner/repo", "", true},
 		{"./owner/repo", "", true},
 		{"/Users/me/repo", "", true},
@@ -161,7 +166,8 @@ func TestRun(t *testing.T) {
 		name string
 		args []string
 		code int
-		// An empty want means the stream must be empty; otherwise it must contain want.
+		// An empty want means the stream must be empty; otherwise it
+		// must contain want.
 		wantStdout string
 		wantStderr string
 	}{

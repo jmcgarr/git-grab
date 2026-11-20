@@ -119,21 +119,19 @@ func splitArgs(args []string) (passthrough []string, repo string) {
 // path separator. A relative GIT_GRAB_ROOT is resolved against the current
 // directory so messages show where the clone actually went.
 func destination(rel string) (string, error) {
-	var err error
 	root := os.Getenv("GIT_GRAB_ROOT")
 	if root == "" {
-		var home string
-		home, err = os.UserHomeDir()
+		home, err := os.UserHomeDir()
 		if err != nil {
 			return "", fmt.Errorf("resolving home directory: %w", err)
 		}
 		root = filepath.Join(home, "Projects")
 	}
-	root, err = filepath.Abs(root)
+	abs, err := filepath.Abs(root)
 	if err != nil {
 		return "", fmt.Errorf("resolving GIT_GRAB_ROOT: %w", err)
 	}
-	return filepath.Join(root, filepath.FromSlash(rel)), nil
+	return filepath.Join(abs, filepath.FromSlash(rel)), nil
 }
 
 // ParseRepo returns the path, relative to the projects root, where repo
