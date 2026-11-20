@@ -127,6 +127,13 @@ rules encoded in tests" maps to one obviously named piece of code.
     touches the filesystem and names the two errors it can return.
 14. Move this spec to `specs/completed/` and mark it done in the index.
 
+### Phase C implementation notes (2026-11-20)
+
+- `destination` assigns `filepath.Abs` to a new `abs` variable rather than
+  reassigning `root`; the first draft's `var err error` plus `var home`
+  read worse than the redeclaration it replaced. Review confirmed the 53
+  table rows are byte-identical to the base and found nothing else.
+
 ## Tests
 
 No new behavior, so the existing tables are the oracle. Each PR must leave
