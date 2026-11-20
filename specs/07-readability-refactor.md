@@ -99,11 +99,14 @@ rules encoded in tests" maps to one obviously named piece of code.
   direction CLAUDE.md's rules already describe. `scpSplit` returns
   ok=false for an empty host, so the bare-host branch gained a
   `:`-in-host rejection to keep `:x.y/owner/repo` an error; as a side
-  effect a drive-letter form with no slash after the colon (`C:x.y/z`)
-  is now rejected where it used to parse as host `C:x.y`. User info is
-  stripped through the last `@` in both branches, so `a@b@host:path`
-  yields host `host` rather than `b@host`. Rows were added for the
-  `@`-in-path, empty-host, and leading-colon cases.
+  effect a drive-letter form with no slash after the colon is now
+  rejected: `ParseRepo("C:x.y/owner/repo")` used to return
+  `c:x/owner/repo` and is now an error. User info is stripped through
+  the last `@` in both branches, so `a@b@host.com:owner/repo` now gives
+  `host/owner/repo` rather than `b@host/owner/repo`. Rows pin both, plus
+  the `@`-in-path, empty-host, and leading-colon cases. Review ran a
+  differential sweep of about 5.4M short inputs against the old code and
+  found no other class of change.
 
 ## Phase C: polish (PR `readability-polish`)
 
