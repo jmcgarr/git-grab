@@ -41,8 +41,8 @@ specs that still have open work live in the top level of `specs/`.
   and exits with its return value, so every path short of invoking git is
   testable. `splitArgs` separates git-clone options from the URL,
   `destination` resolves the clone directory, and the pure function
-  `ParseRepo` (with helpers `splitHostPath`, `scpSyntax`, `domainOf`)
-  computes the relative path.
+  `ParseRepo` (with helpers `splitHostPath`, `scpSplit`, `stripUserInfo`,
+  `pathSegments`, `ownerDir`, `domainOf`) computes the relative path.
 - `main_test.go` is the only test file. Its expectations define the
   directory scheme; treat them as the spec.
 - `dist/` and `.idea/` are gitignored build and IDE output. Never commit them.
