@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -52,38 +53,51 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 
-	rel, err := ParseRepo(repo)
-	if err != nil {
+	// fail reports one of git-grab's own errors and returns its exit code.
+	fail := func(err error) int {
 		fmt.Fprintln(stderr, "git-grab:", err)
-		return 1
-	}
-	dest, err := destination(rel)
-	if err != nil {
-		fmt.Fprintln(stderr, "git-grab:", err)
-		return 1
-	}
-	// Lstat so a dangling symlink counts as occupied too.
-	if _, err := os.Lstat(dest); err == nil {
-		fmt.Fprintf(stderr, "git-grab: %s already exists\n", dest)
 		return 1
 	}
 
-	cmd := exec.Command("git", append(append([]string{"clone"}, passthrough...), repo, dest)...)
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, stdout, stderr
-	if err := cmd.Run(); err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			// git already explained the failure; pass its code through.
-			// ExitCode is -1 when git was killed by a signal.
-			if code := exitErr.ExitCode(); code >= 0 {
-				return code
-			}
-			return 1
-		}
-		fmt.Fprintln(stderr, "git-grab:", err)
-		return 1
+	rel, err := ParseRepo(repo)
+	if err != nil {
+		return fail(err)
 	}
-	return 0
+	dest, err := destination(rel)
+	if err != nil {
+		return fail(err)
+	}
+	// Lstat so a dangling symlink counts as occupied too.
+	if _, err := os.Lstat(dest); err == nil {
+		return fail(fmt.Errorf("%s already exists", dest))
+	}
+
+	cmd := exec.Command("git", slices.Concat([]string{"clone"}, passthrough, []string{repo, dest})...)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, stdout, stderr
+	err = cmd.Run()
+	if err == nil {
+		return 0
+	}
+	if code, ok := gitExitCode(err); ok {
+		// git already explained the failure; print nothing extra.
+		return code
+	}
+	return fail(err)
+}
+
+// gitExitCode reports whether err means git ran and failed, and if so the
+// exit code to pass through. ExitCode is -1 when git was killed by a
+// signal; that becomes 1. Any other error (git not found, for instance)
+// is not git's and returns ok=false.
+func gitExitCode(err error) (code int, ok bool) {
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		return 0, false
+	}
+	if code := exitErr.ExitCode(); code >= 0 {
+		return code, true
+	}
+	return 1, true
 }
 
 // splitArgs separates git-clone options from the repository URL. The last
@@ -91,22 +105,12 @@ func run(args []string, stdout, stderr io.Writer) int {
 // forwarded to git clone unchanged and in order. repo is "" when no
 // candidate exists.
 func splitArgs(args []string) (passthrough []string, repo string) {
-	repoIndex := -1
-	for i, a := range args {
-		if !strings.HasPrefix(a, "-") {
-			repoIndex = i
+	for i := len(args) - 1; i >= 0; i-- {
+		if !strings.HasPrefix(args[i], "-") {
+			return slices.Concat(args[:i], args[i+1:]), args[i]
 		}
 	}
-	passthrough = []string{}
-	for i, a := range args {
-		if i != repoIndex {
-			passthrough = append(passthrough, a)
-		}
-	}
-	if repoIndex >= 0 {
-		repo = args[repoIndex]
-	}
-	return passthrough, repo
+	return slices.Clone(args), ""
 }
 
 // destination returns the absolute clone directory for a ParseRepo result:
@@ -145,7 +149,7 @@ func ParseRepo(repo string) (string, error) {
 	for _, s := range strings.Split(path, "/") {
 		if s == "." || s == ".." {
 			// Would escape the projects root once joined to a directory.
-			return "", fmt.Errorf("expected <owner>/<repo> in %q", repo)
+			return "", noOwnerRepoError(repo)
 		}
 		if s != "" {
 			segments = append(segments, s)
@@ -155,14 +159,14 @@ func ParseRepo(repo string) (string, error) {
 		segments = segments[1:]
 	}
 	if len(segments) < 2 {
-		return "", fmt.Errorf("expected <owner>/<repo> in %q", repo)
+		return "", noOwnerRepoError(repo)
 	}
 
 	// Owner: Stash user repos "~user" become "users/user".
 	owner := segments[0]
 	if strings.HasPrefix(owner, "~") {
 		if len(owner) == 1 {
-			return "", fmt.Errorf("expected <owner>/<repo> in %q", repo)
+			return "", noOwnerRepoError(repo)
 		}
 		owner = "users/" + owner[1:]
 	}
@@ -227,8 +231,16 @@ func splitHostPath(repo string) (host, path string, err error) {
 	}
 }
 
+// noHostError is returned when repo has no usable host, so it cannot be a
+// remote URL.
 func noHostError(repo string) error {
 	return fmt.Errorf("cannot determine host in %q; git-grab needs a remote URL", repo)
+}
+
+// noOwnerRepoError is returned when repo has a host but its path lacks an
+// <owner>/<repo> pair, or contains segments that could escape the root.
+func noOwnerRepoError(repo string) error {
+	return fmt.Errorf("expected <owner>/<repo> in %q", repo)
 }
 
 // scpSyntax reports whether repo looks like [user@]host:path, i.e. it has a

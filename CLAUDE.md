@@ -78,13 +78,19 @@ specs that still have open work live in the top level of `specs/`.
   (that was issue #3). IP hosts keep the full address; single-label hosts
   such as `localhost` keep the label.
 - Owner and any intermediate group segments (GitLab subgroups) are
-  lowercased. Repo name keeps its case.
+  lowercased. Repo name keeps its case. The domain is lowercased too.
 - Strip a trailing `.git` and trailing slashes. Dots elsewhere in the name
   (`foo.github.io`, `Mixed.Case.Repo`) must survive intact.
 - Stash user repos: `~user` becomes `users/user`. A leading `scm/` path
   segment is ignored.
 - Accept ssh, scp-style `git@host:owner/repo`, http(s) with `user@` or
   `user:pass@`, ports, and scheme-less `host/owner/repo`.
+- Scheme-less input is accepted only when the host contains a dot, so
+  `localhost/owner/repo` is rejected while `ssh://git@localhost/owner/repo`
+  works. Without this rule `jmcgarr/git-grab` would parse as host
+  `jmcgarr`.
+- Query string and fragment are dropped from scheme URLs.
+- A dangling symlink at the destination counts as "already exists".
 - Never panic on user input. Bare names, flags, local paths (absolute,
   `./`, `../`, Windows drive letters), `file:///` URLs, `.`/`..` path
   segments, and inputs without an `<owner>/<repo>` path return an error.

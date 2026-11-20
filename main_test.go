@@ -100,39 +100,37 @@ func TestSplitArgs(t *testing.T) {
 }
 
 func TestDestination(t *testing.T) {
-	t.Setenv("GIT_GRAB_ROOT", "")
 	home, err := os.UserHomeDir()
 	if err != nil {
 		t.Skip("no home directory:", err)
 	}
-	got, err := destination("github/jmcgarr/git-grab")
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := filepath.Join(home, "Projects", "github", "jmcgarr", "git-grab")
-	if got != want {
-		t.Errorf("destination() = %q, want %q", got, want)
-	}
+	absRoot := t.TempDir()
+	// Run every row from a known directory so the relative-root row can
+	// assert its full path; the absolute rows are unaffected.
+	cwd := t.TempDir()
+	t.Chdir(cwd)
+	tail := filepath.Join("github", "jmcgarr", "git-grab")
 
-	root := t.TempDir()
-	t.Setenv("GIT_GRAB_ROOT", root)
-	got, err = destination("github/jmcgarr/git-grab")
-	if err != nil {
-		t.Fatal(err)
+	tests := []struct {
+		name string
+		root string // GIT_GRAB_ROOT; "" means unset
+		want string
+	}{
+		{"default", "", filepath.Join(home, "Projects", tail)},
+		{"absolute root", absRoot, filepath.Join(absRoot, tail)},
+		{"relative root", "relroot", filepath.Join(cwd, "relroot", tail)},
 	}
-	want = filepath.Join(root, "github", "jmcgarr", "git-grab")
-	if got != want {
-		t.Errorf("destination() with GIT_GRAB_ROOT = %q, want %q", got, want)
-	}
-
-	// A relative root resolves against the working directory.
-	t.Setenv("GIT_GRAB_ROOT", "relroot")
-	got, err = destination("github/jmcgarr/git-grab")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !filepath.IsAbs(got) {
-		t.Errorf("destination() with relative GIT_GRAB_ROOT = %q, want absolute", got)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("GIT_GRAB_ROOT", tc.root)
+			got, err := destination("github/jmcgarr/git-grab")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != tc.want {
+				t.Errorf("destination() = %q, want %q", got, tc.want)
+			}
+		})
 	}
 }
 
