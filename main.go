@@ -232,7 +232,8 @@ func noOwnerRepoError(repo string) error {
 // scpSplit splits scp syntax [user@]host:path. It applies only when a ":"
 // comes before the first "/", and a single letter before it is a Windows
 // drive (C:/repos/foo), not a host, which is the rule git itself uses.
-// ok is false for anything else, or when the host is empty.
+// ok is false for anything else, for an empty host, and for an
+// unterminated bracketed host.
 func scpSplit(repo string) (host, path string, ok bool) {
 	colon := strings.Index(repo, ":")
 	if colon < 0 {
@@ -286,5 +287,5 @@ func domainOf(host string) string {
 	if len(labels) == 0 {
 		return ""
 	}
-	return labels[max(len(labels)-2, 0)]
+	return labels[max(len(labels)-2, 0)] // a single label is kept as is
 }
