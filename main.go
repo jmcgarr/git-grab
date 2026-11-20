@@ -238,7 +238,7 @@ func scpSplit(repo string) (host, path string, ok bool) {
 	if colon < 0 {
 		return "", "", false
 	}
-	if colon == 1 && (repo[0]|0x20 >= 'a' && repo[0]|0x20 <= 'z') {
+	if colon == 1 && isASCIILetter(repo[0]) {
 		return "", "", false
 	}
 	if slash := strings.Index(repo, "/"); slash >= 0 && slash < colon {
@@ -257,6 +257,12 @@ func scpSplit(repo string) (host, path string, ok bool) {
 		return "", "", false
 	}
 	return host, path, true
+}
+
+// isASCIILetter reports whether c is a-z or A-Z, the only characters that
+// can be a Windows drive letter.
+func isASCIILetter(c byte) bool {
+	return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
 }
 
 // stripUserInfo drops "user@" or "user:pass@" from the front of s, that
