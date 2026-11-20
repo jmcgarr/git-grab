@@ -27,7 +27,7 @@ Each spec is a self-contained unit of work that can be done in one PR.
 | 4 | [04-repo-hygiene.md](completed/04-repo-hygiene.md) (done) | README, module path, dead code, stale branches. Low risk, do last. |
 | 5 | [05-homebrew-tap.md](completed/05-homebrew-tap.md) (done) | `brew install jmcgarr/tap/git-grab`. Designs a tap shared with `dirty` and future tools; most work is in the new tap repo. |
 | 6 | [06-macos-signing.md](completed/06-macos-signing.md) (done) | Developer ID signing and notarization of the darwin binaries (issue #2), as a composite action `dirty` can call too. |
-| 7 | [07-readability-refactor.md](07-readability-refactor.md) | Readability refactor from the 2026-11-15 review, in three stacked PRs. No behavior change; the test tables are the oracle. |
+| 7 | [07-readability-refactor.md](completed/07-readability-refactor.md) (done) | Readability refactor from the 2026-11-15 review, in three stacked PRs. No behavior change; the test tables are the oracle. |
 
 ## Out of scope
 

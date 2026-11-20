@@ -29,6 +29,7 @@ Clones <repository> into $GIT_GRAB_ROOT (default ~/Projects) under
       --version  print version
 `
 
+// main runs git-grab with the process arguments and exits with its code.
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
 }
@@ -122,19 +123,21 @@ func destination(rel string) (string, error) {
 	if root == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("resolving home directory: %w", err)
 		}
 		root = filepath.Join(home, "Projects")
 	}
-	root, err := filepath.Abs(root)
+	abs, err := filepath.Abs(root)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("resolving GIT_GRAB_ROOT: %w", err)
 	}
-	return filepath.Join(root, filepath.FromSlash(rel)), nil
+	return filepath.Join(abs, filepath.FromSlash(rel)), nil
 }
 
 // ParseRepo returns the path, relative to the projects root, where repo
-// should be cloned: "<domain>/<owner>[/<group>...]/<name>".
+// should be cloned: "<domain>/<owner>[/<group>...]/<name>". It is pure: it
+// never touches the filesystem or the network. The error is either the
+// no-host error or the <owner>/<repo> error.
 func ParseRepo(repo string) (string, error) {
 	host, path, err := splitHostPath(repo)
 	if err != nil {
@@ -197,10 +200,10 @@ func ownerDir(owner, repo string) (string, error) {
 // splitHostPath separates a remote URL into its host and path. It accepts
 // scheme URLs (ssh://, https://), scp syntax (git@host:path), and bare
 // host/owner/name. Anything else, including local paths, is an error.
-func splitHostPath(repo string) (host, path string, err error) {
+func splitHostPath(repo string) (string, string, error) {
 	if strings.Contains(repo, "://") {
-		u, perr := url.Parse(repo)
-		if perr != nil || u.Hostname() == "" {
+		u, err := url.Parse(repo)
+		if err != nil || u.Hostname() == "" {
 			return "", "", noHostError(repo)
 		}
 		return u.Hostname(), u.Path, nil
