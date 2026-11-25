@@ -89,6 +89,25 @@ rules encoded in tests" maps to one obviously named piece of code.
 9. CLAUDE.md "Layout" lists the new helper names in place of
    `splitHostPath`, `scpSyntax`, `domainOf`.
 
+### Phase B implementation notes (2026-11-20)
+
+- `isASCIILetter` stays as a helper. Folding it into `scpSplit` produced a
+  bit trick (`c|0x20`) that reads worse than the two range checks.
+- Checking the domain before the path changes which error some inputs
+  get, never whether they get one. No test row changed.
+- Two inputs no test covered now behave differently, both in the
+  direction CLAUDE.md's rules already describe. `scpSplit` returns
+  ok=false for an empty host, so the bare-host branch gained a
+  `:`-in-host rejection to keep `:x.y/owner/repo` an error; as a side
+  effect a drive-letter form with no slash after the colon is now
+  rejected: `ParseRepo("C:x.y/owner/repo")` used to return
+  `c:x/owner/repo` and is now an error. User info is stripped through
+  the last `@` in both branches, so `a@b@host.com:owner/repo` now gives
+  `host/owner/repo` rather than `b@host/owner/repo`. Rows pin both, plus
+  the `@`-in-path, empty-host, and leading-colon cases. Review ran a
+  differential sweep of about 5.4M short inputs against the old code and
+  found no other class of change.
+
 ## Phase C: polish (PR `readability-polish`)
 
 10. `TestParseRepo` rows are regrouped to mirror the CLAUDE.md rules list
